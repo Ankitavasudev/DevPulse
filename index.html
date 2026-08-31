@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevPulse — GitHub Analytics Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ========== CSS VARIABLES ========== */
+        :root {
+            --bg: #06060b; --bg-1: #0c0c14; --bg-2: #12121e; --bg-3: #1a1a2e;
+            --surface: rgba(12,12,20,0.85); --glass: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.12);
+            --accent: #6c5ce7; --accent-2: #a29bfe; --accent-glow: rgba(108,92,231,0.4);
+            --green: #00b894; --green-2: #55efc4; --red: #ff6b6b; --orange: #fdcb6e;
+            --blue: #74b9ff; --purple: #a29bfe; --pink: #fd79a8; --cyan: #81ecec;
+            --text: #f0f0f5; --text-2: #a0a0b8; --text-3: #6c6c80;
+            --radius: 16px; --radius-sm: 10px; --radius-xs: 6px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.4); --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f5fa; --bg-1: #eeeef3; --bg-2: #e4e4ed; --bg-3: #d4d4dd;
+            --surface: rgba(255,255,255,0.9); --glass: rgba(0,0,0,0.02);
+            --border: rgba(0,0,0,0.08); --border-2: rgba(0,0,0,0.15);
+            --text: #1a1a2e; --text-2: #5a5a72; --text-3: #8a8a9e;
+            --shadow: 0 8px 32px rgba(0,0,0,0.08); --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+
+        /* ========== BACKGROUND ========== */
+        .bg-mesh { position:fixed; inset:0; z-index:0; pointer-events:none;
+            background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(108,92,231,0.12) 0%, transparent 60%),
+                        radial-gradient(ellipse 60% 40% at 80% 50%, rgba(253,121,168,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse 50% 50% at 20% 80%, rgba(116,185,255,0.06) 0%, transparent 50%);
+        }
+        .bg-grid { position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.3;
+            background-image: linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);
+            background-size: 60px 60px; mask-image: radial-gradient(ellipse at center,black 30%,transparent 70%);
+        }
+
+        .container { max-width:1280px; margin:0 auto; padding:0 2rem; position:relative; z-index:1; }
+
+        /* ========== HEADER ========== */
+        .topbar { display:flex; justify-content:space-between; align-items:center; padding:1rem 0; position:sticky; top:0; z-index:100; backdrop-filter:blur(20px); background:rgba(6,6,11,0.8); border-bottom:1px solid var(--border); }
+        [data-theme="light"] .topbar { background:rgba(245,245,250,0.8); }
+        .topbar-logo { display:flex; align-items:center; gap:0.6rem; font-weight:800; font-size:1.1rem; }
+        .topbar-logo .icon { width:32px; height:32px; background:linear-gradient(135deg,var(--accent),var(--pink)); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.8rem; font-weight:900; }
+        .topbar-actions { display:flex; gap:0.5rem; align-items:center; }
+        .icon-btn { width:36px; height:36px; border-radius:8px; border:1px solid var(--border); background:var(--glass); color:var(--text-2); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; font-size:1rem; }
+        .icon-btn:hover { border-color:var(--accent); color:var(--accent-2); background:rgba(108,92,231,0.08); }
+
+        .hero { text-align:center; padding:4rem 0 2rem; }
+        .hero-badge { display:inline-flex; align-items:center; gap:0.5rem; background:rgba(108,92,231,0.1); border:1px solid rgba(108,92,231,0.2); padding:0.35rem 1rem; border-radius:50px; font-size:0.7rem; color:var(--accent-2); margin-bottom:1.5rem; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; }
+        .hero-badge .dot { width:6px; height:6px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,184,148,0.4)} 50%{opacity:0.8;box-shadow:0 0 0 6px rgba(0,184,148,0)} }
+        .hero h1 { font-size:3.5rem; font-weight:900; letter-spacing:-0.04em; line-height:1.1; margin-bottom:1rem; }
+        .hero h1 .g { background:linear-gradient(135deg,var(--text) 0%,var(--accent-2) 50%,var(--pink) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .hero p { font-size:1.1rem; color:var(--text-2); max-width:520px; margin:0 auto 2rem; line-height:1.6; }
+
+        /* ========== SEARCH ========== */
+        .search-wrap { max-width:540px; margin:0 auto; }
+        .search-box { display:flex; align-items:center; background:var(--bg-2); border:1.5px solid var(--border); border-radius:14px; padding:0.35rem; transition:all 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow:var(--shadow); }
+        .search-box:focus-within { border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-glow),var(--shadow); }
+        .search-icon { padding:0 0 0 1rem; color:var(--text-3); display:flex; }
+        .search-box input { flex:1; background:transparent; border:none; padding:0.85rem 1rem; color:var(--text); font-size:1rem; font-family:inherit; outline:none; }
+        .search-box input::placeholder { color:var(--text-3); }
+        .search-btn { background:linear-gradient(135deg,var(--accent),#5a4bd1); color:#fff; border:none; padding:0.8rem 1.6rem; border-radius:10px; font-size:0.9rem; font-weight:600; cursor:pointer; transition:all 0.3s; font-family:inherit; white-space:nowrap; }
+        .search-btn:hover { transform:translateY(-1px); box-shadow:0 4px 20px var(--accent-glow); }
+        .search-btn:active { transform:scale(0.98); }
+        .search-btn:disabled { opacity:0.5; cursor:wait; transform:none; }
+        .search-hints { display:flex; justify-content:center; gap:0.75rem; margin-top:1rem; flex-wrap:wrap; }
+        .hint-chip { background:var(--glass); border:1px solid var(--border); padding:0.3rem 0.8rem; border-radius:50px; font-size:0.75rem; color:var(--text-3); cursor:pointer; transition:all 0.2s; }
+        .hint-chip:hover { border-color:var(--accent); color:var(--accent-2); }
+
+        /* ========== LOADING ========== */
+        .loading { display:none; text-align:center; padding:5rem 0; }
+        .loading.active { display:block; }
+        .loader { width:44px; height:44px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 1.5rem; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        .loading-text { color:var(--text-2); font-size:0.95rem; }
+        .loading-steps { display:flex; justify-content:center; gap:1.5rem; margin-top:1rem; font-size:0.8rem; color:var(--text-3); }
+        .loading-steps span.active { color:var(--accent-2); font-weight:600; }
+
+        /* ========== TOAST ========== */
+        .toast-container { position:fixed; bottom:2rem; right:2rem; z-index:9999; display:flex; flex-direction:column; gap:0.5rem; }
+        .toast { background:var(--bg-2); border:1px solid var(--border-2); border-radius:10px; padding:0.75rem 1.25rem; font-size:0.85rem; color:var(--text); box-shadow:var(--shadow); display:flex; align-items:center; gap:0.5rem; animation:toastIn 0.3s ease; min-width:250px; }
+        .toast.success { border-left:3px solid var(--green); }
+        .toast.error { border-left:3px solid var(--red); }
+        .toast.info { border-left:3px solid var(--blue); }
+        @keyframes toastIn { from{opacity:0;transform:translateX(50px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes toastOut { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(50px)} }
+
+        /* ========== MODAL ========== */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; backdrop-filter:blur(4px); align-items:center; justify-content:center; }
+        .modal-overlay.active { display:flex; }
+        .modal { background:var(--bg-1); border:1px solid var(--border-2); border-radius:20px; width:90%; max-width:700px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:modalIn 0.3s ease; }
+        @keyframes modalIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; padding:1.5rem; border-bottom:1px solid var(--border); }
+        .modal-title { font-size:1.1rem; font-weight:700; }
+        .modal-close { width:32px; height:32px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-2); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; font-size:1.2rem; }
+        .modal-close:hover { border-color:var(--red); color:var(--red); }
+        .modal-body { padding:1.5rem; }
+        .modal-body p { color:var(--text-2); line-height:1.6; margin-bottom:1rem; }
+
+        /* ========== DASHBOARD ========== */
+        .dashboard { display:none; padding-bottom:4rem; }
+        .dashboard.active { display:block; }
+
+        /* Profile Header */
+        .profile-header { display:flex; align-items:flex-start; gap:2rem; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2rem; margin-top:2rem; backdrop-filter:blur(20px); position:relative; overflow:hidden; }
+        .profile-header::before { content:''; position:absolute; top:0; left:0; right:0; height:120px; background:linear-gradient(135deg,rgba(108,92,231,0.15),rgba(253,121,168,0.1)); z-index:0; }
+        .avatar-wrap { position:relative; z-index:1; flex-shrink:0; }
+        .avatar { width:120px; height:120px; border-radius:50%; border:4px solid var(--bg-2); box-shadow:0 0 40px rgba(108,92,231,0.3); transition:transform 0.3s; cursor:pointer; }
+        .avatar:hover { transform:scale(1.05); }
+        .profile-score-badge { position:absolute; bottom:-4px; right:-4px; width:40px; height:40px; background:var(--bg-2); border:3px solid var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; color:var(--accent-2); font-family:var(--mono); }
+        .profile-info { position:relative; z-index:1; flex:1; }
+        .profile-name { font-size:1.7rem; font-weight:800; letter-spacing:-0.02em; }
+        .profile-login { color:var(--accent-2); font-size:0.95rem; margin-bottom:0.4rem; }
+        .profile-bio { color:var(--text-2); margin-bottom:0.75rem; line-height:1.5; max-width:550px; font-size:0.9rem; }
+        .profile-tags { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.75rem; }
+        .tag { display:inline-flex; align-items:center; gap:0.3rem; background:var(--glass); border:1px solid var(--border); padding:0.25rem 0.6rem; border-radius:50px; font-size:0.7rem; color:var(--text-2); text-decoration:none; transition:all 0.2s; }
+        .tag:hover { border-color:var(--accent); color:var(--accent-2); }
+        .tag svg { width:12px; height:12px; opacity:0.6; }
+        .profile-actions { display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap; }
+        .btn { padding:0.45rem 1rem; border-radius:8px; font-size:0.8rem; font-weight:500; cursor:pointer; transition:all 0.2s; text-decoration:none; display:inline-flex; align-items:center; gap:0.4rem; font-family:inherit; border:1px solid var(--border); background:var(--glass); color:var(--text-2); }
+        .btn:hover { border-color:var(--accent); color:var(--accent-2); background:rgba(108,92,231,0.08); }
+        .btn-primary { background:linear-gradient(135deg,var(--accent),#5a4bd1); color:#fff; border-color:transparent; }
+        .btn-primary:hover { box-shadow:0 4px 15px var(--accent-glow); transform:translateY(-1px); }
+
+        /* Stats Row */
+        .stats-row { display:grid; grid-template-columns:repeat(5,1fr); gap:1rem; margin-top:1.5rem; }
+        .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; text-align:center; backdrop-filter:blur(20px); transition:all 0.3s; position:relative; overflow:hidden; cursor:default; }
+        .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:0; transition:opacity 0.3s; }
+        .stat-card:hover::before { opacity:1; }
+        .stat-card:hover { border-color:var(--border-2); transform:translateY(-2px); box-shadow:var(--shadow-sm); }
+        .stat-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin:0 auto 0.6rem; font-size:1.1rem; }
+        .stat-value { font-size:1.7rem; font-weight:800; font-family:var(--mono); letter-spacing:-0.02em; }
+        .stat-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-3); margin-top:0.2rem; }
+
+        /* Card */
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-top:1.5rem; backdrop-filter:blur(20px); }
+        .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
+        .card-title { font-size:1rem; font-weight:700; display:flex; align-items:center; gap:0.5rem; }
+        .card-badge { font-size:0.7rem; background:var(--glass); border:1px solid var(--border); padding:0.2rem 0.6rem; border-radius:50px; color:var(--text-3); font-weight:500; }
+
+        /* Contribution Graph */
+        .contrib-graph { overflow-x:auto; padding:0.5rem 0; scrollbar-width:thin; scrollbar-color:var(--bg-3) transparent; }
+        .contrib-grid { display:flex; gap:3px; }
+        .contrib-week { display:flex; flex-direction:column; gap:3px; }
+        .contrib-day { width:12px; height:12px; border-radius:2px; background:var(--bg-3); transition:all 0.15s; cursor:pointer; position:relative; }
+        .contrib-day:hover { outline:2px solid var(--accent-2); outline-offset:1px; z-index:2; }
+        .contrib-day[data-level="1"] { background:#0e4429; }
+        .contrib-day[data-level="2"] { background:#006d32; }
+        .contrib-day[data-level="3"] { background:#26a641; }
+        .contrib-day[data-level="4"] { background:#39d353; }
+        .contrib-tip { display:none; position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:var(--bg); border:1px solid var(--border-2); padding:0.35rem 0.6rem; border-radius:6px; font-size:0.65rem; white-space:nowrap; z-index:10; pointer-events:none; color:var(--text); box-shadow:var(--shadow-sm); }
+        .contrib-day:hover .contrib-tip { display:block; }
+        .contrib-legend { display:flex; align-items:center; gap:0.4rem; justify-content:flex-end; margin-top:0.75rem; font-size:0.65rem; color:var(--text-3); }
+        .legend-box { width:12px; height:12px; border-radius:2px; }
+
+        /* Language Bar */
+        .lang-bar { display:flex; height:10px; border-radius:5px; overflow:hidden; gap:2px; }
+        .lang-seg { transition:all 0.3s; cursor:pointer; border-radius:3px; }
+        .lang-seg:hover { filter:brightness(1.3); }
+        .lang-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:0.5rem; margin-top:1rem; }
+        .lang-item { display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; border-radius:6px; transition:background 0.2s; cursor:default; }
+        .lang-item:hover { background:var(--glass); }
+        .lang-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        .lang-name { font-size:0.82rem; flex:1; }
+        .lang-pct { font-family:var(--mono); font-size:0.75rem; color:var(--text-3); }
+
+        /* Repos */
+        .repo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:1rem; }
+        .repo-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.2rem; transition:all 0.3s; text-decoration:none; color:inherit; display:flex; flex-direction:column; cursor:pointer; }
+        .repo-card:hover { border-color:var(--accent); transform:translateY(-3px); box-shadow:0 8px 30px rgba(108,92,231,0.15); }
+        .repo-top { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem; }
+        .repo-icon { color:var(--text-3); flex-shrink:0; }
+        .repo-name { font-weight:600; color:var(--accent-2); font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .repo-desc { color:var(--text-2); font-size:0.8rem; line-height:1.5; flex:1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:0.75rem; }
+        .repo-bottom { display:flex; gap:0.75rem; font-size:0.7rem; color:var(--text-3); flex-wrap:wrap; }
+        .repo-bottom span { display:flex; align-items:center; gap:0.3rem; }
+        .repo-lang-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+        .repo-topic { display:inline-block; background:rgba(108,92,231,0.1); border:1px solid rgba(108,92,231,0.2); padding:0.1rem 0.4rem; border-radius:50px; font-size:0.6rem; color:var(--accent-2); margin:0.1rem; }
+
+        /* Timeline */
+        .timeline { position:relative; padding-left:2rem; }
+        .timeline::before { content:''; position:absolute; left:5px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,var(--accent),transparent); }
+        .tl-item { position:relative; padding-bottom:1.2rem; }
+        .tl-item:last-child { padding-bottom:0; }
+        .tl-dot { position:absolute; left:-2rem; top:3px; width:12px; height:12px; border-radius:50%; border:2px solid var(--bg); }
+        .tl-dot.push { background:var(--green); }
+        .tl-dot.create { background:var(--blue); }
+        .tl-dot.issue { background:var(--orange); }
+        .tl-dot.pr { background:var(--purple); }
+        .tl-dot.delete { background:var(--red); }
+        .tl-dot.star { background:var(--orange); }
+        .tl-dot.fork { background:var(--cyan); }
+        .tl-dot.other { background:var(--text-3); }
+        .tl-date { font-size:0.68rem; color:var(--text-3); margin-bottom:0.15rem; }
+        .tl-text { font-size:0.82rem; color:var(--text-2); line-height:1.5; }
+        .tl-text a { color:var(--accent-2); text-decoration:none; }
+        .tl-text a:hover { text-decoration:underline; }
+
+        /* Score Ring */
+        .score-wrap { display:flex; align-items:center; gap:2rem; }
+        .score-ring { position:relative; width:130px; height:130px; flex-shrink:0; }
+        .score-ring svg { transform:rotate(-90deg); width:130px; height:130px; }
+        .score-ring circle { fill:none; stroke-width:8; }
+        .score-ring .bg { stroke:var(--bg-3); }
+        .score-ring .prog { stroke:var(--accent); stroke-linecap:round; stroke-dasharray:345; transition:stroke-dashoffset 1.5s ease; }
+        .score-num { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .score-num-val { font-size:2rem; font-weight:900; font-family:var(--mono); color:var(--accent-2); }
+        .score-num-label { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-3); }
+        .score-bars { flex:1; }
+        .score-bar-item { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem; }
+        .score-bar-label { font-size:0.8rem; color:var(--text-2); width:110px; flex-shrink:0; }
+        .score-bar-track { flex:1; height:6px; background:var(--bg-3); border-radius:3px; overflow:hidden; }
+        .score-bar-fill { height:100%; border-radius:3px; transition:width 1s ease; }
+        .score-bar-val { font-family:var(--mono); font-size:0.75rem; color:var(--text-3); width:30px; text-align:right; }
+
+        /* Streaks */
+        .streak-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+        .streak-item { text-align:center; padding:1.2rem; background:var(--bg-2); border-radius:var(--radius-sm); border:1px solid var(--border); transition:all 0.3s; }
+        .streak-item:hover { border-color:var(--border-2); transform:translateY(-2px); }
+        .streak-val { font-size:2rem; font-weight:800; font-family:var(--mono); }
+        .streak-val.fire { color:var(--orange); }
+        .streak-val.green { color:var(--green); }
+        .streak-val.blue { color:var(--blue); }
+        .streak-label { font-size:0.7rem; color:var(--text-3); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.05em; }
+
+        /* Code Frequency Chart */
+        .freq-chart { display:flex; align-items:flex-end; gap:6px; height:120px; padding-top:1rem; }
+        .freq-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:0.3rem; height:100%; justify-content:flex-end; }
+        .freq-bar { width:100%; border-radius:4px 4px 0 0; transition:height 0.5s ease; min-height:2px; cursor:pointer; position:relative; }
+        .freq-bar:hover { filter:brightness(1.2); }
+        .freq-bar .freq-tip { display:none; position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); background:var(--bg); border:1px solid var(--border-2); padding:0.2rem 0.5rem; border-radius:4px; font-size:0.6rem; white-space:nowrap; z-index:10; color:var(--text); }
+        .freq-bar:hover .freq-tip { display:block; }
+        .freq-label { font-size:0.6rem; color:var(--text-3); }
+
+        /* Notes */
+        .notes-area { width:100%; min-height:100px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; color:var(--text); font-family:inherit; font-size:0.85rem; resize:vertical; outline:none; transition:border-color 0.2s; }
+        .notes-area:focus { border-color:var(--accent); }
+        .notes-actions { display:flex; gap:0.5rem; margin-top:0.75rem; justify-content:flex-end; }
+
+        /* Compare */
+        .compare-input { display:flex; gap:0.5rem; margin-bottom:1.5rem; }
+        .compare-input input { flex:1; background:var(--bg-2); border:1px solid var(--border); border-radius:8px; padding:0.6rem 1rem; color:var(--text); font-family:inherit; font-size:0.85rem; outline:none; }
+        .compare-input input:focus { border-color:var(--accent); }
+        .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+        .compare-col { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem; }
+        .compare-col h3 { font-size:0.95rem; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; }
+        .compare-stat { display:flex; justify-content:space-between; padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.82rem; }
+        .compare-stat:last-child { border-bottom:none; }
+        .compare-stat span:first-child { color:var(--text-2); }
+        .compare-stat span:last-child { font-family:var(--mono); font-weight:600; }
+
+        /* Footer */
+        .footer { text-align:center; padding:4rem 0 2rem; border-top:1px solid var(--border); margin-top:4rem; }
+        .footer p { color:var(--text-3); font-size:0.8rem; }
+        .footer a { color:var(--accent-2); text-decoration:none; }
+        .footer a:hover { text-decoration:underline; }
+
+        /* Responsive */
+        @media(max-width:900px) { .stats-row{grid-template-columns:repeat(3,1fr)} .repo-grid{grid-template-columns:1fr} .streak-grid{grid-template-columns:1fr} .score-wrap{flex-direction:column} .compare-grid{grid-template-columns:1fr} }
+        @media(max-width:640px) { .hero h1{font-size:2.2rem} .profile-header{flex-direction:column;align-items:center;text-align:center} .profile-tags{justify-content:center} .profile-actions{justify-content:center} .stats-row{grid-template-columns:repeat(2,1fr)} .container{padding:0 1rem} .topbar{padding:0.75rem 1rem} }
+
+        /* Animations */
+        .anim { opacity:0; transform:translateY(15px); animation:animIn 0.5s ease forwards; }
+        @keyframes animIn { to{opacity:1;transform:translateY(0)} }
+        .d1{animation-delay:0.1s} .d2{animation-delay:0.2s} .d3{animation-delay:0.3s} .d4{animation-delay:0.4s} .d5{animation-delay:0.5s}
+
+        /* Skeleton */
+        .skeleton { background:linear-gradient(90deg,var(--bg-2) 25%,var(--bg-3) 50%,var(--bg-2) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:6px; }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    </style>
+</head>
+<body>
+    <div class="bg-mesh"></div>
+    <div class="bg-grid"></div>
+
+    <!-- TOPBAR -->
+    <nav class="topbar">
+        <div class="topbar-logo">
+            <div class="icon">DP</div>
+            <span>DevPulse</span>
+        </div>
+        <div class="topbar-actions">
+            <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme" id="themeBtn">☀</button>
+            <button class="icon-btn" onclick="showShortcuts()" title="Keyboard Shortcuts">⌨</button>
+            <button class="icon-btn" onclick="showAbout()" title="About">?</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- HERO -->
+        <section class="hero">
+            <div class="hero-badge"><span class="dot"></span> Open Source Tool</div>
+            <h1><span class="g">DevPulse</span></h1>
+            <p>Beautiful GitHub analytics at a glance. Enter any username and get instant insights into coding patterns, languages, and contributions.</p>
+            <div class="search-wrap">
+                <div class="search-box">
+                    <span class="search-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+                    <input type="text" id="usernameInput" placeholder="Enter GitHub username..." autocomplete="off" spellcheck="false">
+                    <button class="search-btn" id="searchBtn">Analyze</button>
+                </div>
+                <div class="search-hints">
+                    <span class="hint-chip" onclick="quickSearch('torvalds')">torvalds</span>
+                    <span class="hint-chip" onclick="quickSearch('gvanrossum')">gvanrossum</span>
+                    <span class="hint-chip" onclick="quickSearch('Ankitavasudev')">Ankitavasudev</span>
+                    <span class="hint-chip" onclick="quickSearch('tj')">tj</span>
+                    <span class="hint-chip" onclick="quickSearch('sindresorhus')">sindresorhus</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- LOADING -->
+        <div class="loading" id="loading">
+            <div class="loader"></div>
+            <div class="loading-text">Fetching GitHub data...</div>
+            <div class="loading-steps">
+                <span id="s1" class="active">Profile</span>
+                <span id="s2">Repos</span>
+                <span id="s3">Events</span>
+                <span id="s4">Analytics</span>
+            </div>
+        </div>
+
+        <!-- ERROR -->
+        <div class="error-msg" id="error"></div>
+
+        <!-- DASHBOARD -->
+        <div class="dashboard" id="dashboard">
+            <div class="profile-header anim" id="profileHeader"></div>
+            <div class="stats-row anim d1" id="statsRow"></div>
+            <div class="card anim d2" id="scoreCard"></div>
+            <div class="card anim d2" id="streakCard"></div>
+            <div class="card anim d3">
+                <div class="card-header">
+                    <div class="card-title">Contribution Activity</div>
+                    <span class="card-badge" id="totalContribs"></span>
+                </div>
+                <div class="contrib-graph" id="contribGraph"></div>
+            </div>
+            <div class="card anim d3">
+                <div class="card-header">
+                    <div class="card-title">Code Frequency</div>
+                    <span class="card-badge">Last 52 weeks</span>
+                </div>
+                <div class="freq-chart" id="freqChart"></div>
+            </div>
+            <div class="card anim d4">
+                <div class="card-header">
+                    <div class="card-title">Top Languages</div>
+                </div>
+                <div class="lang-bar" id="langBar"></div>
+                <div class="lang-grid" id="langGrid"></div>
+            </div>
+            <div class="card anim d4">
+                <div class="card-header">
+                    <div class="card-title">Popular Repositories</div>
+                </div>
+                <div class="repo-grid" id="repoGrid"></div>
+            </div>
+            <div class="card anim d5">
+                <div class="card-header">
+                    <div class="card-title">Recent Activity</div>
+                </div>
+                <div class="timeline" id="timeline"></div>
+            </div>
+            <div class="card anim d5">
+                <div class="card-header">
+                    <div class="card-title">My Notes</div>
+                    <span class="card-badge">Saved locally</span>
+                </div>
+                <textarea class="notes-area" id="notesArea" placeholder="Add your notes about this profile... (auto-saved)"></textarea>
+                <div class="notes-actions">
+                    <button class="btn" onclick="clearNotes()">Clear</button>
+                    <button class="btn btn-primary" onclick="exportNotes()">Export</button>
+                </div>
+            </div>
+            <div class="card anim d5">
+                <div class="card-header">
+                    <div class="card-title">Compare Profiles</div>
+                </div>
+                <div class="compare-input">
+                    <input type="text" id="compareInput" placeholder="Enter second username to compare...">
+                    <button class="btn btn-primary" onclick="compareProfiles()">Compare</button>
+                </div>
+                <div id="compareResult"></div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Built with ♥ by <a href="https://github.com/Ankitavasudev" target="_blank">Ankita</a> • <a href="https://github.com/Ankitavasudev/devpulse" target="_blank">Star on GitHub</a> • <a href="#" onclick="showShortcuts();return false">Shortcuts</a></p>
+        </footer>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Title</div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+<script>
+const API='https://api.github.com';
+const C={'JavaScript':'#f1e05a','TypeScript':'#3178c6','Python':'#3572A5','Go':'#00ADD8','Rust':'#dea584','Java':'#b07219','C++':'#f34b7d','C':'#555','C#':'#178600','Ruby':'#701516','PHP':'#4F5D95','Swift':'#F05138','Kotlin':'#A97BFF','Dart':'#00B4AB','HTML':'#e34c26','CSS':'#563d7c','Shell':'#89e051','Vue':'#41b883','Svelte':'#ff3e00','Lua':'#000080','R':'#198CE7','Scala':'#c22d40','Haskell':'#5e5086','Elixir':'#6e4a7e','Zig':'#ec915c','Jupyter Notebook':'#DA5B0B','Makefile':'#427819',default:'#6c6c80'};
+
+let currentUser=null, currentRepos=[], currentEvents=[];
+
+const $=s=>document.getElementById(s);
+
+// Theme
+function toggleTheme(){
+    const t=document.documentElement.getAttribute('data-theme');
+    const next=t==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    $('themeBtn').textContent=next==='dark'?'☀':'☾';
+    localStorage.setItem('theme',next);
+    toast(next==='dark'?'Dark mode enabled':'Light mode enabled','info');
+}
+if(localStorage.getItem('theme')){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme'));$('themeBtn').textContent=localStorage.getItem('theme')==='dark'?'☀':'☾';}
+
+// Toast
+function toast(msg,type='info'){
+    const t=document.createElement('div');
+    t.className=`toast ${type}`;
+    t.textContent=msg;
+    $('toastContainer').appendChild(t);
+    setTimeout(()=>{t.style.animation='toastOut 0.3s ease forwards';setTimeout(()=>t.remove(),300);},3000);
+}
+
+// Modal
+function showModal(title,body){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('modalOverlay').classList.add('active');}
+function closeModal(){$('modalOverlay').classList.remove('active');}
+
+// Shortcuts
+function showShortcuts(){
+    showModal('Keyboard Shortcuts',`
+        <p><kbd style="background:var(--bg-3);padding:0.15rem 0.4rem;border-radius:4px;font-family:var(--mono);font-size:0.8rem;border:1px solid var(--border-2)">/</kbd> — Focus search</p>
+        <p><kbd style="background:var(--bg-3);padding:0.15rem 0.4rem;border-radius:4px;font-family:var(--mono);font-size:0.8rem;border:1px solid var(--border-2)">Enter</kbd> — Analyze profile</p>
+        <p><kbd style="background:var(--bg-3);padding:0.15rem 0.4rem;border-radius:4px;font-family:var(--mono);font-size:0.8rem;border:1px solid var(--border-2)">Esc</kbd> — Close modal</p>
+        <p><kbd style="background:var(--bg-3);padding:0.15rem 0.4rem;border-radius:4px;font-family:var(--mono);font-size:0.8rem;border:1px solid var(--border-2)">D</kbd> — Toggle dark/light mode</p>
+        <p><kbd style="background:var(--bg-3);padding:0.15rem 0.4rem;border-radius:4px;font-family:var(--mono);font-size:0.8rem;border:1px solid var(--border-2)">S</kbd> — Share profile</p>
+        <p style="margin-top:1rem;color:var(--text-3);font-size:0.8rem">Press any key to close</p>
+    `);
+}
+
+function showAbout(){
+    showModal('About DevPulse',`
+        <p>DevPulse is a beautiful GitHub analytics dashboard that helps developers understand their coding patterns, popular languages, and contribution activity.</p>
+        <p><strong>Features:</strong></p>
+        <p>• Profile scoring system<br>• Contribution heatmap<br>• Language breakdown<br>• Activity timeline<br>• Code frequency chart<br>• Profile comparison<br>• Notes & export<br>• Dark/Light theme<br>• Keyboard shortcuts</p>
+        <p><strong>Built by:</strong> <a href="https://github.com/Ankitavasudev" target="_blank" style="color:var(--accent-2)">Ankita Vasudev</a></p>
+    `);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+    if(e.key==='Escape')closeModal();
+    if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();$('usernameInput').focus();}
+    if(e.key==='d'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')toggleTheme();
+    if(e.key==='s'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'&&currentUser){shareProfile();}
+});
+
+function quickSearch(u){$('usernameInput').value=u;analyze();}
+
+$('usernameInput').addEventListener('keypress',e=>{if(e.key==='Enter')analyze();});
+$('searchBtn').addEventListener('click',analyze);
+
+// URL param
+const up=new URLSearchParams(location.search);
+if(up.get('user')){$('usernameInput').value=up.get('user');analyze();}
+
+// History
+let searchHistory=JSON.parse(localStorage.getItem('dp_history')||'[]');
+
+async function analyze(){
+    const user=$('usernameInput').value.trim();
+    if(!user)return;
+
+    $('loading').classList.add('active');
+    $('error').classList.remove('active');
+    $('dashboard').classList.remove('active');
+    $('searchBtn').disabled=true;
+
+    ['s1','s2','s3','s4'].forEach((s,i)=>{setTimeout(()=>{document.querySelectorAll('.loading-steps span').forEach(el=>el.classList.remove('active'));$(s).classList.add('active');},i*500);});
+
+    try{
+        const[uRes,rRes,eRes]=await Promise.all([
+            fetch(`${API}/users/${user}`),
+            fetch(`${API}/users/${user}/repos?sort=stars&per_page=100`),
+            fetch(`${API}/users/${user}/events/public?per_page=100`)
+        ]);
+        if(!uRes.ok)throw new Error(uRes.status===404?'User not found. Check the username.':'API rate limit reached. Try again later.');
+
+        const profile=await uRes.json();
+        const repos=await rRes.json();
+        const events=await eRes.json();
+
+        currentUser=profile;currentRepos=repos;currentEvents=events;
+
+        renderProfile(profile);
+        renderStats(profile,repos);
+        renderScore(profile,repos);
+        renderStreaks(events);
+        renderContrib(events);
+        renderFreq(events);
+        renderLangs(repos);
+        renderRepos(repos.slice(0,6));
+        renderTimeline(events.slice(0,12));
+        loadNotes(user);
+
+        // Save history
+        searchHistory=[user,...searchHistory.filter(u=>u!==user)].slice(0,10);
+        localStorage.setItem('dp_history',JSON.stringify(searchHistory));
+
+        $('loading').classList.remove('active');
+        $('dashboard').classList.add('active');
+        history.replaceState(null,'',`?user=${user}`);
+        toast(`Loaded ${profile.login}'s profile`,'success');
+    }catch(err){
+        $('loading').classList.remove('active');
+        $('error').textContent=err.message;
+        $('error').classList.add('active');
+        toast(err.message,'error');
+    }finally{$('searchBtn').disabled=false;}
+}
+
+function shareProfile(){
+    if(!currentUser)return;
+    navigator.clipboard.writeText(location.href);
+    toast('Profile link copied to clipboard!','success');
+}
+
+function renderProfile(u){
+    const joined=new Date(u.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    const tags=[];
+    if(u.company)tags.push(`<span class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.749.749 0 11.832-1.248l1.055.703c.487.325.779.871.779 1.456v5.965A1.75 1.75 0 0114.25 16h-3.5a.766.766 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3z"/></svg>${u.company}</span>`);
+    if(u.location)tags.push(`<span class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.596 11.596l-3.535 3.536a1.5 1.5 0 01-2.122 0l-3.535-3.536a6.5 6.5 0 119.192 0zM8 8.5a2 2 0 100-4 2 2 0 000 4z"/></svg>${u.location}</span>`);
+    if(u.blog)tags.push(`<a href="${u.blog.startsWith('http')?u.blog:'https://'+u.blog}" target="_blank" class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z"/></svg>Link</a>`);
+    if(u.twitter_username)tags.push(`<a href="https://twitter.com/${u.twitter_username}" target="_blank" class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633z"/></@${u.twitter_username}</a>`);
+
+    $('profileHeader').innerHTML=`
+        <div class="avatar-wrap">
+            <img src="${u.avatar_url}" class="avatar" alt="${u.login}" onclick="showModal('Profile Picture','<img src=\\'${u.avatar_url}\\' style=\\'width:100%;border-radius:12px\\'>')">
+            <div class="profile-score-badge">${calcScore(u,repos).total}</div>
+        </div>
+        <div class="profile-info">
+            <div class="profile-name">${u.name||u.login}</div>
+            <div class="profile-login">@${u.login}</div>
+            ${u.bio?`<div class="profile-bio">${u.bio}</div>`:''}
+            <div class="profile-tags">${tags.join('')}</div>
+            <div class="profile-actions">
+                <a href="${u.html_url}" target="_blank" class="btn">View on GitHub ↗</a>
+                <button class="btn" onclick="shareProfile()">Share Profile</button>
+                <button class="btn" onclick="exportProfile()">Export</button>
+            </div>
+        </div>`;
+}
+
+function renderStats(u,repos){
+    const stars=repos.reduce((s,r)=>s+r.stargazers_count,0);
+    const forks=repos.reduce((s,r)=>s+r.forks_count,0);
+    const items=[
+        {icon:'📚',val:fmt(u.public_repos),label:'Repos',bg:'rgba(108,92,231,0.12)'},
+        {icon:'👥',val:fmt(u.followers),label:'Followers',bg:'rgba(253,121,168,0.12)'},
+        {icon:'⭐',val:fmt(stars),label:'Stars',bg:'rgba(253,203,110,0.12)'},
+        {icon:'🔀',val:fmt(forks),label:'Forks',bg:'rgba(116,185,255,0.12)'},
+        {icon:'👤',val:fmt(u.following),label:'Following',bg:'rgba(0,184,148,0.12)'},
+    ];
+    $('statsRow').innerHTML=items.map(s=>`<div class="stat-card"><div class="stat-icon" style="background:${s.bg}">${s.icon}</div><div class="stat-value">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+}
+
+function calcScore(u,repos){
+    let b={};
+    b.repos=Math.min(20,u.public_repos*2);
+    b.followers=Math.min(20,Math.log10(Math.max(1,u.followers))*7);
+    const stars=repos.reduce((a,r)=>a+r.stargazers_count,0);
+    b.stars=Math.min(20,Math.log10(Math.max(1,stars))*8);
+    b.bio=u.bio?10:0;
+    b.location=u.location?10:0;
+    b.activity=10;
+    return{total:Math.min(100,Math.round(b.repos+b.followers+b.stars+b.bio+b.location+b.activity)),breakdown:b};
+}
+
+function renderScore(u,repos){
+    const s=calcScore(u,repos);
+    const circ=2*Math.PI*55;
+    const offset=circ-(s.total/100)*circ;
+    const bars=[
+        {label:'Repositories',val:s.breakdown.repos,max:20,color:'var(--accent)'},
+        {label:'Followers',val:s.breakdown.followers,max:20,color:'var(--pink)'},
+        {label:'Stars',val:s.breakdown.stars,max:20,color:'var(--orange)'},
+        {label:'Bio',val:s.breakdown.bio,max:10,color:'var(--green)'},
+        {label:'Location',val:s.breakdown.location,max:10,color:'var(--blue)'},
+        {label:'Activity',val:s.breakdown.activity,max:20,color:'var(--cyan)'},
+    ];
+    $('scoreCard').innerHTML=`
+        <div class="card-header"><div class="card-title">Profile Score</div><span class="card-badge">Out of 100</span></div>
+        <div class="score-wrap">
+            <div class="score-ring">
+                <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="55"/><circle class="prog" cx="60" cy="60" r="55" style="stroke-dashoffset:${offset}"/></svg>
+                <div class="score-num"><div class="score-num-val">${s.total}</div><div class="score-num-label">Score</div></div>
+            </div>
+            <div class="score-bars">${bars.map(b=>`<div class="score-bar-item"><span class="score-bar-label">${b.label}</span><div class="score-bar-track"><div class="score-bar-fill" style="width:${(b.val/b.max)*100}%;background:${b.color}"></div></div><span class="score-bar-val">${Math.round(b.val)}</span></div>`).join('')}</div>
+        </div>`;
+}
+
+function renderStreaks(events){
+    const days={};
+    events.forEach(e=>{if(e.type==='PushEvent'||e.type==='CreateEvent'||e.type==='IssuesEvent'||e.type==='PullRequestEvent'){const d=e.created_at.split('T')[0];days[d]=(days[d]||0)+1;}});
+    const sorted=Object.keys(days).sort();
+    let best=0,cur=0;
+    sorted.forEach((d,i)=>{
+        if(i===0){cur=1;}
+        else{const p=new Date(sorted[i-1]),c=new Date(d);cur=(c-p)/(864e5)===1?cur+1:1;}
+        best=Math.max(best,cur);
+    });
+    const push=events.filter(e=>e.type==='PushEvent').length;
+    const daysActive=Object.keys(days).length;
+    $('streakCard').innerHTML=`
+        <div class="card-header"><div class="card-title">Activity Streaks</div></div>
+        <div class="streak-grid">
+            <div class="streak-item"><div class="streak-val fire">${best}</div><div class="streak-label">Best Streak (Days)</div></div>
+            <div class="streak-item"><div class="streak-val green">${daysActive}</div><div class="streak-label">Active Days</div></div>
+            <div class="streak-item"><div class="streak-val blue">${push}</div><div class="streak-label">Push Events</div></div>
+        </div>`;
+}
+
+function renderContrib(events){
+    const counts={};
+    events.forEach(e=>{if(e.type==='PushEvent'||e.type==='CreateEvent'){const d=e.created_at.split('T')[0];counts[d]=(counts[d]||0)+1;}});
+    const today=new Date(),start=new Date(today);start.setDate(start.getDate()-364);
+    const weeks=[];let week=[];const d=new Date(start);
+    while(d<=today){
+        const ds=d.toISOString().split('T')[0],c=counts[ds]||0;
+        let lv=0;if(c>0)lv=1;if(c>3)lv=2;if(c>6)lv=3;if(c>10)lv=4;
+        week.push({date:ds,level:lv,count:c});
+        if(d.getDay()===6||d.getTime()>=today.getTime()){weeks.push(week);week=[];}
+        d.setDate(d.getDate()+1);
+    }
+    if(week.length)weeks.push(week);
+    const total=Object.values(counts).reduce((a,b)=>a+b,0);
+    $('totalContribs').textContent=`${total} contributions`;
+    $('contribGraph').innerHTML=`<div class="contrib-grid">${weeks.map(w=>`<div class="contrib-week">${w.map(day=>`<div class="contrib-day" data-level="${day.level}"><div class="contrib-tip">${day.count} contributions on ${day.date}</div></div>`).join('')}</div>`).join('')}</div><div class="contrib-legend"><span>Less</span><div class="legend-box" style="background:var(--bg-3)"></div><div class="legend-box" style="background:#0e4429"></div><div class="legend-box" style="background:#006d32"></div><div class="legend-box" style="background:#26a641"></div><div class="legend-box" style="background:#39d353"></div><span>More</span></div>`;
+}
+
+function renderFreq(events){
+    const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const counts=[0,0,0,0,0,0,0];
+    events.forEach(e=>{if(e.type==='PushEvent'){const d=new Date(e.created_at).getDay();counts[d]+=e.payload.commits?.length||0;}});
+    const max=Math.max(...counts,1);
+    $('freqChart').innerHTML=dayNames.map((name,i)=>{
+        const h=(counts[i]/max)*100;
+        const color=counts[i]>max*0.7?'var(--green)':counts[i]>max*0.3?'var(--blue)':'var(--text-3)';
+        return`<div class="freq-bar-wrap"><div class="freq-bar" style="height:${h}%;background:${color}"><div class="freq-tip">${counts[i]} commits on ${name}</div></div><div class="freq-label">${name}</div></div>`;
+    }).join('');
+}
+
+function renderLangs(repos){
+    const lc={};repos.forEach(r=>{if(r.language)lc[r.language]=(lc[r.language]||0)+1;});
+    const sorted=Object.entries(lc).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const total=sorted.reduce((s,[,c])=>s+c,0);
+    $('langBar').innerHTML=sorted.map(([l,c])=>{const col=C[l]||C.default;const pct=(c/total*100);return`<div class="lang-seg" style="width:${pct}%;background:${col}" title="${l}: ${pct.toFixed(1)}%"></div>`;}).join('');
+    $('langGrid').innerHTML=sorted.map(([l,c])=>{const col=C[l]||C.default;const pct=(c/total*100).toFixed(1);return`<div class="lang-item"><div class="lang-dot" style="background:${col}"></div><span class="lang-name">${l}</span><span class="lang-pct">${pct}%</span></div>`;}).join('');
+}
+
+function renderRepos(repos){
+    $('repoGrid').innerHTML=repos.map(r=>`
+        <div class="repo-card" onclick="showRepoModal('${r.full_name}')">
+            <div class="repo-top"><span class="repo-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9z"/></svg></span><span class="repo-name">${r.name}</span></div>
+            <div class="repo-desc">${r.description||'No description'}</div>
+            ${r.topics&&r.topics.length?`<div style="margin-bottom:0.5rem">${r.topics.slice(0,3).map(t=>`<span class="repo-topic">${t}</span>`).join('')}</div>`:''}
+            <div class="repo-bottom">
+                ${r.language?`<span><span class="repo-lang-dot" style="background:${C[r.language]||C.default}"></span>${r.language}</span>`:''}
+                <span>⭐ ${fmt(r.stargazers_count)}</span><span>🔀 ${fmt(r.forks_count)}</span>
+                ${r.license?`<span>📄 ${r.license.spdx_id||'License'}</span>`:''}
+            </div>
+        </div>`).join('');
+}
+
+async function showRepoModal(fullName){
+    showModal(fullName,'<p style="color:var(--text-3)">Loading repo details...</p>');
+    try{
+        const[repoRes,readmeRes]=await Promise.all([
+            fetch(`${API}/repos/${fullName}`),
+            fetch(`${API}/repos/${fullName}/readme`).catch(()=>null)
+        ]);
+        const repo=await repoRes.json();
+        let readme='';
+        if(readmeRes&&readmeRes.ok){
+            const rd=await readmeRes.json();
+            readme=atob(rd.content);
+            readme=readme.replace(/```(\w*)\n([\s\S]*?)```/g,'<pre style="background:var(--bg-3);padding:1rem;border-radius:6px;overflow-x:auto;font-family:var(--mono);font-size:0.8rem;margin:0.5rem 0"><code>$2</code></pre>');
+            readme=readme.replace(/`([^`]+)`/g,'<code style="background:var(--bg-3);padding:0.1rem 0.3rem;border-radius:3px;font-family:var(--mono);font-size:0.85rem">$1</code>');
+            readme=readme.replace(/^### (.*)/gm,'<h3 style="margin:1rem 0 0.5rem;font-size:1rem">$1</h3>');
+            readme=readme.replace(/^## (.*)/gm,'<h2 style="margin:1.2rem 0 0.5rem;font-size:1.1rem">$1</h2>');
+            readme=readme.replace(/^# (.*)/gm,'<h1 style="margin:1.5rem 0 0.5rem;font-size:1.2rem">$1</h1>');
+            readme=readme.replace(/\n/g,'<br>');
+        }
+        $('modalTitle').textContent=repo.name;
+        $('modalBody').innerHTML=`
+            <p>${repo.description||'No description'}</p>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0;font-size:0.85rem;color:var(--text-2)">
+                ${repo.language?`<span>● ${repo.language}</span>`:''}
+                <span>⭐ ${repo.stargazers_count}</span>
+                <span>🔀 ${repo.forks_count}</span>
+                <span>👀 ${repo.watchers_count}</span>
+                <span>📦 ${repo.size}KB</span>
+            </div>
+            ${repo.topics&&repo.topics.length?`<div style="margin-bottom:1rem">${repo.topics.map(t=>`<span class="repo-topic">${t}</span>`).join('')}</div>`:''}
+            ${readme?`<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)"><h3 style="font-size:0.9rem;margin-bottom:0.75rem">README</h3><div style="font-size:0.85rem;color:var(--text-2);line-height:1.6">${readme}</div></div>`:''}
+            <div style="margin-top:1.5rem;display:flex;gap:0.5rem">
+                <a href="${repo.html_url}" target="_blank" class="btn btn-primary">View on GitHub ↗</a>
+                <button class="btn" onclick="navigator.clipboard.writeText('${repo.clone_url}');toast('Clone URL copied!','success')">Copy Clone URL</button>
+            </div>`;
+    }catch(e){$('modalBody').innerHTML='<p style="color:var(--red)">Failed to load repo details</p>';}
+}
+
+function renderTimeline(events){
+    const dc={PushEvent:'push',CreateEvent:'create',IssuesEvent:'issue',PullRequestEvent:'pr',DeleteEvent:'delete',WatchEvent:'star',ForkEvent:'fork'};
+    $('timeline').innerHTML=events.map(e=>{
+        const date=new Date(e.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        let text='';
+        switch(e.type){
+            case'PushEvent':text=`Pushed ${e.payload.commits?.length||0} commit(s) to <a href="https://github.com/${e.repo.name}" target="_blank">${e.repo.name}</a>`;break;
+            case'CreateEvent':text=`Created ${e.payload.ref_type} <a href="https://github.com/${e.repo.name}" target="_blank">${e.repo.name}</a>`;break;
+            case'IssuesEvent':text=`${cap(e.payload.action)} issue in <a href="https://github.com/${e.repo.name}" target="_blank">${e.repo.name}</a>`;break;
+            case'PullRequestEvent':text=`${cap(e.payload.action)} PR in <a href="https://github.com/${e.repo.name}" target="_blank">${e.repo.name}</a>`;break;
+            case'DeleteEvent':text=`Deleted ${e.payload.ref_type} <code>${e.payload.ref}</code>`;break;
+            case'WatchEvent':text=`Starred <a href="https://github.com/${e.repo.name}" target="_blank">${e.repo.name}</a>`;break;
+            case'ForkEvent':text=`Forked <a href="https://github.com/${e.repo.name}" target="_blank">${e.repo.name}</a>`;break;
+            default:text=`${e.type.replace('Event','')} on <a href="https://github.com/${e.repo.name}" target="_blank">${e.repo.name}</a>`;
+        }
+        return`<div class="tl-item"><div class="tl-dot ${dc[e.type]||'other'}"></div><div class="tl-date">${date}</div><div class="tl-text">${text}</div></div>`;
+    }).join('');
+}
+
+// Notes
+function loadNotes(user){const n=localStorage.getItem('dp_notes_'+user)||'';$('notesArea').value=n;}
+$('notesArea').addEventListener('input',()=>{if(currentUser)localStorage.setItem('dp_notes_'+currentUser.login,$('notesArea').value);});
+function clearNotes(){if(currentUser){localStorage.removeItem('dp_notes_'+currentUser.login);$('notesArea').value='';toast('Notes cleared','info');}}
+function exportNotes(){
+    if(!currentUser)return;
+    const blob=new Blob([`# Notes for ${currentUser.login}\n\n${$('notesArea').value}`],{type:'text/markdown'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`notes-${currentUser.login}.md`;a.click();
+    toast('Notes exported!','success');
+}
+function exportProfile(){
+    if(!currentUser)return;
+    const data=JSON.stringify({profile:currentUser,repos:currentRepos.slice(0,10),exported:new Date().toISOString()},null,2);
+    const blob=new Blob([data],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`devpulse-${currentUser.login}.json`;a.click();
+    toast('Profile exported!','success');
+}
+
+// Compare
+async function compareProfiles(){
+    const user2=$('compareInput').value.trim();
+    if(!user2||!currentUser){toast('Enter a username to compare','error');return;}
+    try{
+        const[res]=await Promise.all([fetch(`${API}/users/${user2}`)]);
+        if(!res.ok)throw new Error('User not found');
+        const u2=await res.json();
+        const[r2]=await Promise.all([fetch(`${API}/users/${user2}/repos?sort=stars&per_page=100`)]);
+        const repos2=await r2.json();
+        const s1=calcScore(currentUser,currentRepos),s2=calcScore(u2,repos2);
+        const stars1=currentRepos.reduce((a,r)=>a+r.stargazers_count,0);
+        const stars2=repos2.reduce((a,r)=>a+r.stargazers_count,0);
+        $('compareResult').innerHTML=`
+            <div class="compare-grid">
+                <div class="compare-col">
+                    <h3><img src="${currentUser.avatar_url}" style="width:24px;height:24px;border-radius:50%">${currentUser.login}</h3>
+                    <div class="compare-stat"><span>Score</span><span>${s1.total}</span></div>
+                    <div class="compare-stat"><span>Repos</span><span>${currentUser.public_repos}</span></div>
+                    <div class="compare-stat"><span>Followers</span><span>${fmt(currentUser.followers)}</span></div>
+                    <div class="compare-stat"><span>Stars</span><span>${fmt(stars1)}</span></div>
+                    <div class="compare-stat"><span>Following</span><span>${currentUser.following}</span></div>
+                </div>
+                <div class="compare-col">
+                    <h3><img src="${u2.avatar_url}" style="width:24px;height:24px;border-radius:50%">${u2.login}</h3>
+                    <div class="compare-stat"><span>Score</span><span>${s2.total}</span></div>
+                    <div class="compare-stat"><span>Repos</span><span>${u2.public_repos}</span></div>
+                    <div class="compare-stat"><span>Followers</span><span>${fmt(u2.followers)}</span></div>
+                    <div class="compare-stat"><span>Stars</span><span>${fmt(stars2)}</span></div>
+                    <div class="compare-stat"><span>Following</span><span>${u2.following}</span></div>
+                </div>
+            </div>`;
+        toast(`Comparing ${currentUser.login} vs ${u2.login}`,'info');
+    }catch(e){toast(e.message,'error');}
+}
+
+function fmt(n){return n>=1000?(n/1000).toFixed(1)+'k':n;}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+</script>
+</body>
+</html>
