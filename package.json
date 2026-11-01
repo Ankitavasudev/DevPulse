@@ -1,0 +1,12 @@
+{
+  "name": "devpulse",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GitHub analytics dashboard - one static HTML file, zero dependencies",
+  "scripts": {
+    "test": "node --test",
+    "serve": "python -m http.server 8080"
+  },
+  "license": "MIT"
+}

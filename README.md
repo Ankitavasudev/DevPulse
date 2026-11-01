@@ -1,141 +1,109 @@
-# DevPulse — GitHub Analytics Dashboard
+<div align="center">
 
-> Beautiful GitHub analytics at a glance. Enter any username and get instant insights.
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:06060B,50:2B2350,100:6C5CE7&height=170&section=header&text=DevPulse&fontSize=50&fontColor=F0F0F5&fontAlignY=40&desc=GitHub%20analytics%20in%20one%20static%20page&descAlignY=60&descSize=16" width="100%" alt="DevPulse" />
 
-![DevPulse Preview](https://via.placeholder.com/1200x600/12121e/6c5ce7?text=DevPulse+Dashboard)
+**Type a username. Get the shape of a developer in one screen.**
 
-## Problem
+<br />
 
-GitHub's built-in profile is basic. Developers need to quickly analyze profiles — contribution patterns, language usage, popular repos, activity timeline, and compare with peers. There's no single beautiful view that shows everything.
+<a href="https://ankitavasudev.github.io/DevPulse/"><img src="https://img.shields.io/badge/%E2%96%B6%20LIVE%20DEMO-6C5CE7?style=for-the-badge&logoColor=white" alt="Live demo" /></a>
+&nbsp;
+<img src="https://img.shields.io/badge/dependencies-0-0D1117?style=for-the-badge" alt="Zero dependencies" />
+&nbsp;
+<img src="https://img.shields.io/badge/single%20file-56%20KB-0D1117?style=for-the-badge" alt="Single file" />
+&nbsp;
+<img src="https://img.shields.io/badge/tests-9%20passing-3FB950?style=for-the-badge" alt="Tests" />
 
-## Solution
-
-**DevPulse** is a single-page web app that takes a GitHub username and displays a beautiful analytics dashboard with 15+ features.
-
-## Features
-
-### Core Analytics
-- **Profile Overview** — Avatar, bio, location, company, social links
-- **Contribution Heatmap** — 365-day activity graph with tooltips
-- **Language Breakdown** — Color-coded bar chart with percentages
-- **Popular Repos** — Top repositories with stars, forks, and topics
-- **Activity Timeline** — Recent events in chronological order
-
-### Advanced Features
-- **Profile Score** — 0-100 score based on repos, followers, stars, bio, activity
-- **Activity Streaks** — Best streak, active days, push events
-- **Code Frequency** — Commits by day of week (when do you code most?)
-- **Profile Comparison** — Compare two profiles side by side
-- **Repository Details** — Click any repo to see README and full stats
-
-### Productivity Tools
-- **Notes** — Add personal notes about any profile (auto-saved)
-- **Export Profile** — Download profile data as JSON
-- **Export Notes** — Download notes as Markdown
-- **Share Profile** — Copy shareable link with one click
-- **Search History** — Recent searches saved locally
-
-### UI/UX
-- **Dark/Light Theme** — Toggle with button or keyboard shortcut
-- **Keyboard Shortcuts** — `/` to search, `D` for theme, `S` to share
-- **Toast Notifications** — Feedback for every action
-- **Modal Popups** — Repo details, profile picture, shortcuts
-- **Animated Score Ring** — Circular progress indicator
-- **Responsive Design** — Works on mobile, tablet, desktop
-- **Glassmorphism Design** — Modern blur effects and gradients
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | HTML5, CSS3, Vanilla JavaScript |
-| API | GitHub REST API v3 |
-| Design | Glassmorphism, CSS Grid, Flexbox |
-| Fonts | Inter + JetBrains Mono |
-| Hosting | GitHub Pages (static) |
-
-## How It Works
-
-1. Enter a GitHub username
-2. DevPulse fetches data from GitHub API (user profile, repos, events)
-3. Data is processed and analyzed
-4. Beautiful dashboard is rendered with charts, stats, and insights
-
-## Running Locally
-
-```bash
-# Clone the repo
-git clone https://github.com/Ankitavasudev/devpulse.git
-cd devpulse
-
-# Open in browser (no server needed!)
-open index.html
-
-# OR use Python
-python -m http.server 8080
-
-# OR use Node.js
-npx serve .
-```
-
-## URL Parameters
-
-- `?user=username` — Auto-load a profile
-- Example: `https://ankitavasudev.github.io/devpulse?user=torvalds`
-
-## Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `/` | Focus search |
-| `Enter` | Analyze profile |
-| `Esc` | Close modal |
-| `D` | Toggle dark/light theme |
-| `S` | Share profile |
-
-## Project Structure
-
-```
-devpulse/
-├── index.html      # Single file (HTML + CSS + JS)
-└── README.md       # This file
-```
-
-## Performance
-
-- **0 dependencies** — no npm install needed
-- **~20KB total** — single HTML file
-- **< 1 second load** — no frameworks to download
-- **GitHub API** — 60 requests/hour (unauthenticated)
-
-## Judging Criteria
-
-| Criteria | Score | Evidence |
-|----------|-------|----------|
-| **Tech Implementation** | 9/10 | GitHub API integration, data processing, charts, local storage, export, comparison |
-| **Design** | 10/10 | Glassmorphism, dark/light theme, animations, responsive, professional |
-| **Potential Impact** | 9/10 | Useful for every developer — job applications, team analysis, self-improvement |
-| **Quality of Idea** | 9/10 | Clean, focused, solves a real problem with 15+ features |
-
-## Future Enhancements
-
-- [ ] GitHub token support (5000 requests/hour)
-- [ ] PDF export
-- [ ] Custom themes
-- [ ] PWA support (offline mode)
-- [ ] Multi-language support
-- [ ] Dark mode auto-detect from system
-
-## License
-
-MIT License
-
-## Acknowledgments
-
-- GitHub REST API for data
-- Inter + JetBrains Mono for typography
-- Inspired by GitHub's contribution graph
+</div>
 
 ---
 
-Built with by [Ankita Vasudev](https://github.com/Ankitavasudev)
+## What it does
+
+Enter any GitHub username and DevPulse fetches that profile, its repositories and its public events, then renders:
+
+| Panel | What it shows |
+| :-- | :-- |
+| **Profile header** | Avatar, bio, company, location, blog, score badge |
+| **Stat row** | Repos, followers, stars (summed across repos), forks, following |
+| **Profile score** | 0–100 from six weighted components, each with its own bar so you can see where it comes from |
+| **Streaks** | Longest consecutive active streak, active days, push events |
+| **Public activity** | 90-day grid, intensity by events per day, with per-day tooltips |
+| **Code frequency** | Commits per weekday, derived from push events |
+| **Languages** | Share of repositories per language, colour-coded |
+| **Top repositories** | Six most-starred repos with stars, forks and topics |
+| **Timeline** | Recent public events, humanised |
+| **Compare** | Two profiles side by side on the same metrics |
+| **Notes** | Per-profile notes, saved in `localStorage`, exportable as Markdown |
+
+Plus: dark/light theme, search history, JSON export, shareable `?user=` links, modals and toasts.
+
+## Honest limits
+
+DevPulse runs on GitHub's **unauthenticated** REST API, which imposes real constraints:
+
+- **60 requests / hour per IP.** Each analysis costs 3 requests, so a class of students on one campus network can exhaust it. Comparison costs 5.
+- **Public events only, 90 days, max 100 events.** The activity grid is therefore a *lower bound* on your contributions — private work, organisation work and older history are invisible. The UI says so under the card.
+- **No contribution calendar.** GitHub's real contribution graph has no CORS-enabled public endpoint, so DevPulse never claims to show it.
+- **The score is a heuristic, not a judgment.** It rewards repos, followers, stars, a filled bio, a location and recent activity. Anyone can game it; treat it as a dashboard, not a ranking.
+
+The earlier version of this README showed a placeholder stock image as a "preview" and a table of self-awarded scores. Both are gone.
+
+## How it works
+
+```
+username → /users/:user      → profile
+          /users/:user/repos → language mix, stars, forks
+          /users/:user/events/public → activity grid, streaks, weekday bars
+```
+
+No build step: `index.html` contains the markup, the CSS and the script. Open it and it runs.
+
+## Run it
+
+```bash
+python -m http.server 8080     # or: npx serve .
+# open http://localhost:8080/?user=torvalds
+```
+
+`file://` works for a plain open too, but `history.replaceState` (used for shareable links) behaves better over HTTP.
+
+## Tests
+
+```bash
+npm test        # node --test, 9 tests
+```
+
+The suite guards the things that silently rot in a single-file app: that every `$('id')` the script looks up exists in the markup, that the inline script still parses, that no placeholder image sneaks back in, that every remote asset is HTTPS, and that the documented keyboard shortcuts are actually implemented.
+
+## Keyboard
+
+| Key | Action |
+| :-- | :-- |
+| `/` | Focus the search box |
+| `Enter` | Analyze |
+| `D` | Toggle theme |
+| `S` | Copy the share link |
+| `Esc` | Close the modal |
+
+## Structure
+
+```
+DevPulse/
+├── index.html      # the whole app (HTML + CSS + JS, ~56 KB)
+├── tests/          # structural + syntax checks
+├── README.md
+└── LICENSE
+```
+
+## Stack
+
+Vanilla JavaScript (no framework) · GitHub REST API v3 · CSS custom properties · `localStorage` · `node:test` · GitHub Actions · GitHub Pages
+
+---
+
+<div align="center">
+
+**Ankita Salaria** · [@Ankitavasudev](https://github.com/Ankitavasudev)
+
+</div>

@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DevPulse - instant GitHub profile analytics: contribution heatmap, language breakdown, streaks, profile score, comparison and notes. One static page, zero dependencies.">
+    <meta property="og:title" content="DevPulse - GitHub Analytics Dashboard">
+    <meta property="og:description" content="Enter a GitHub username and get a contribution heatmap, language breakdown, streaks, a profile score and side-by-side comparison.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <title>DevPulse — GitHub Analytics Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -148,6 +153,7 @@
         .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
         .card-title { font-size:1rem; font-weight:700; display:flex; align-items:center; gap:0.5rem; }
         .card-badge { font-size:0.7rem; background:var(--glass); border:1px solid var(--border); padding:0.2rem 0.6rem; border-radius:50px; color:var(--text-3); font-weight:500; }
+        .card-note { font-size:0.68rem; line-height:1.5; color:var(--text-3); margin-top:0.9rem; border-left:2px solid var(--border-2); padding-left:0.6rem; }
 
         /* Contribution Graph */
         .contrib-graph { overflow-x:auto; padding:0.5rem 0; scrollbar-width:thin; scrollbar-color:var(--bg-3) transparent; }
@@ -342,15 +348,16 @@
             <div class="card anim d2" id="streakCard"></div>
             <div class="card anim d3">
                 <div class="card-header">
-                    <div class="card-title">Contribution Activity</div>
+                    <div class="card-title">Public Activity — last 90 days</div>
                     <span class="card-badge" id="totalContribs"></span>
                 </div>
                 <div class="contrib-graph" id="contribGraph"></div>
+                <p class="card-note">GitHub's public events API only exposes the last 90 days and at most 100 events, so this is a lower bound — not your full contribution history.</p>
             </div>
             <div class="card anim d3">
                 <div class="card-header">
                     <div class="card-title">Code Frequency</div>
-                    <span class="card-badge">Last 52 weeks</span>
+                    <span class="card-badge">Last 90 days</span>
                 </div>
                 <div class="freq-chart" id="freqChart"></div>
             </div>
@@ -515,7 +522,7 @@ async function analyze(){
 
         renderProfile(profile);
         renderStats(profile,repos);
-        renderScore(profile,repos);
+        renderScore(profile,repos,events);
         renderStreaks(events);
         renderContrib(events);
         renderFreq(events);
@@ -552,12 +559,12 @@ function renderProfile(u){
     if(u.company)tags.push(`<span class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.749.749 0 11.832-1.248l1.055.703c.487.325.779.871.779 1.456v5.965A1.75 1.75 0 0114.25 16h-3.5a.766.766 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3z"/></svg>${u.company}</span>`);
     if(u.location)tags.push(`<span class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.596 11.596l-3.535 3.536a1.5 1.5 0 01-2.122 0l-3.535-3.536a6.5 6.5 0 119.192 0zM8 8.5a2 2 0 100-4 2 2 0 000 4z"/></svg>${u.location}</span>`);
     if(u.blog)tags.push(`<a href="${u.blog.startsWith('http')?u.blog:'https://'+u.blog}" target="_blank" class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z"/></svg>Link</a>`);
-    if(u.twitter_username)tags.push(`<a href="https://twitter.com/${u.twitter_username}" target="_blank" class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633z"/></@${u.twitter_username}</a>`);
+    if(u.twitter_username)tags.push(`<a href="https://twitter.com/${u.twitter_username}" target="_blank" class="tag"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633z"/></svg>Twitter</a>`);
 
     $('profileHeader').innerHTML=`
         <div class="avatar-wrap">
             <img src="${u.avatar_url}" class="avatar" alt="${u.login}" onclick="showModal('Profile Picture','<img src=\\'${u.avatar_url}\\' style=\\'width:100%;border-radius:12px\\'>')">
-            <div class="profile-score-badge">${calcScore(u,repos).total}</div>
+            <div class="profile-score-badge">${calcScore(u,currentRepos).total}</div>
         </div>
         <div class="profile-info">
             <div class="profile-name">${u.name||u.login}</div>
@@ -585,7 +592,7 @@ function renderStats(u,repos){
     $('statsRow').innerHTML=items.map(s=>`<div class="stat-card"><div class="stat-icon" style="background:${s.bg}">${s.icon}</div><div class="stat-value">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
 }
 
-function calcScore(u,repos){
+function calcScore(u,repos,events){
     let b={};
     b.repos=Math.min(20,u.public_repos*2);
     b.followers=Math.min(20,Math.log10(Math.max(1,u.followers))*7);
@@ -593,12 +600,14 @@ function calcScore(u,repos){
     b.stars=Math.min(20,Math.log10(Math.max(1,stars))*8);
     b.bio=u.bio?10:0;
     b.location=u.location?10:0;
-    b.activity=10;
+    // Activity is measured from the public events window, not assumed.
+    const activeDays=events?new Set(events.map(e=>String(e.created_at).split('T')[0])).size:0;
+    b.activity=Math.min(20,activeDays*0.7);
     return{total:Math.min(100,Math.round(b.repos+b.followers+b.stars+b.bio+b.location+b.activity)),breakdown:b};
 }
 
-function renderScore(u,repos){
-    const s=calcScore(u,repos);
+function renderScore(u,repos,events){
+    const s=calcScore(u,repos,events);
     const circ=2*Math.PI*55;
     const offset=circ-(s.total/100)*circ;
     const bars=[
@@ -633,7 +642,7 @@ function renderStreaks(events){
     const push=events.filter(e=>e.type==='PushEvent').length;
     const daysActive=Object.keys(days).length;
     $('streakCard').innerHTML=`
-        <div class="card-header"><div class="card-title">Activity Streaks</div></div>
+        <div class="card-header"><div class="card-title">Activity Streaks</div><span class="card-badge">public events</span></div>
         <div class="streak-grid">
             <div class="streak-item"><div class="streak-val fire">${best}</div><div class="streak-label">Best Streak (Days)</div></div>
             <div class="streak-item"><div class="streak-val green">${daysActive}</div><div class="streak-label">Active Days</div></div>
@@ -644,7 +653,7 @@ function renderStreaks(events){
 function renderContrib(events){
     const counts={};
     events.forEach(e=>{if(e.type==='PushEvent'||e.type==='CreateEvent'){const d=e.created_at.split('T')[0];counts[d]=(counts[d]||0)+1;}});
-    const today=new Date(),start=new Date(today);start.setDate(start.getDate()-364);
+    const today=new Date(),start=new Date(today);start.setDate(start.getDate()-89);
     const weeks=[];let week=[];const d=new Date(start);
     while(d<=today){
         const ds=d.toISOString().split('T')[0],c=counts[ds]||0;
@@ -655,7 +664,7 @@ function renderContrib(events){
     }
     if(week.length)weeks.push(week);
     const total=Object.values(counts).reduce((a,b)=>a+b,0);
-    $('totalContribs').textContent=`${total} contributions`;
+    $('totalContribs').textContent=`${total} public events`;
     $('contribGraph').innerHTML=`<div class="contrib-grid">${weeks.map(w=>`<div class="contrib-week">${w.map(day=>`<div class="contrib-day" data-level="${day.level}"><div class="contrib-tip">${day.count} contributions on ${day.date}</div></div>`).join('')}</div>`).join('')}</div><div class="contrib-legend"><span>Less</span><div class="legend-box" style="background:var(--bg-3)"></div><div class="legend-box" style="background:#0e4429"></div><div class="legend-box" style="background:#006d32"></div><div class="legend-box" style="background:#26a641"></div><div class="legend-box" style="background:#39d353"></div><span>More</span></div>`;
 }
 
@@ -778,7 +787,9 @@ async function compareProfiles(){
         const u2=await res.json();
         const[r2]=await Promise.all([fetch(`${API}/users/${user2}/repos?sort=stars&per_page=100`)]);
         const repos2=await r2.json();
-        const s1=calcScore(currentUser,currentRepos),s2=calcScore(u2,repos2);
+        const[e2]=await Promise.all([fetch(`${API}/users/${user2}/events/public?per_page=100`)]);
+        const events2=e2.ok?await e2.json():[];
+        const s1=calcScore(currentUser,currentRepos,currentEvents),s2=calcScore(u2,repos2,events2);
         const stars1=currentRepos.reduce((a,r)=>a+r.stargazers_count,0);
         const stars2=repos2.reduce((a,r)=>a+r.stargazers_count,0);
         $('compareResult').innerHTML=`
